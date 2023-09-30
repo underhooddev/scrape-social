@@ -8,20 +8,14 @@ import {
 import { generateRequestId } from "./libs/requestId";
 
 const app = new Elysia()
-  .use(
-    swagger({
-      path: "/v1/use",
-      autoDarkMode: true,
-      version: "1.0-ts",
-      // documentation: {},
-    })
-  )
+
   .group("/v1", (app) => {
     return app
-      .get("/reels/*", async (context) => {
+      .post("/reels/", async (context) => {
         try {
-          console.log(context);
-          const urlParam = context.params["*"];
+          const body = await context.request.json();
+          const urlParam = body.url;
+          if (urlParam == null) return;
           const convertedUrl = convertInstagramReelsToDdInstagram(urlParam);
 
           const response = await fetch(convertedUrl, {
@@ -41,9 +35,10 @@ const app = new Elysia()
               JSON.stringify({
                 id: id,
                 message: finalres!.url,
-                error: null,
+                error: "",
                 type: finalres!.type,
                 service: "instagram",
+                code: "P200",
               }),
               {
                 headers: {
@@ -60,6 +55,7 @@ const app = new Elysia()
             JSON.stringify({
               message: "Can't fetch reels. Server Error",
               error: err.message,
+              code: "P404",
             }),
             {
               headers: {
@@ -70,10 +66,11 @@ const app = new Elysia()
           );
         }
       })
-      .get("/tweets/*", async (context) => {
+      .post("/tweets/", async (context) => {
         try {
-          const urlParam = context.params["*"];
-          console.log(urlParam);
+          const body = await context.request.json();
+          const urlParam = body.url;
+          if (urlParam == null) return;
 
           const convertedUrl = convertTwitterUrl(urlParam);
 
@@ -82,44 +79,19 @@ const app = new Elysia()
             JSON.stringify({
               id: id,
               message: convertedUrl,
-              error: null,
+              error: "",
               type: "custom",
               service: "twitter",
               code: "P200",
             })
           ); // Respond with success
-
-          // console.log(convertedUrl);
-
-          // console.log(response);
-
-          // if (response.status == 200) {
-          //   const cleanUrl = response.config.url!.split("?")[0];
-          //   const type = cleanUrl.endsWith(".mp4")
-          //     ? "video"
-          //     : "image"
-          //     ? cleanUrl.endsWith(".jpg")
-          //     : "";
-
-          //   return new Response(
-          //     JSON.stringify({
-          //       id: id,
-          //       message: "response.url",
-          //       error: null,
-          //       type: type,
-          //       service: "twitter",
-          //       code: "P200",
-          //     })
-          // ); // Respond with success
-          // } else {
-          // throw new Error("Request failed with status " + response.status);
-          // }
         } catch (err: any) {
           console.log(err);
           return new Response(
             JSON.stringify({
               message: "Can't fetch tweet. Server Error",
               error: err.message,
+              code: "P04",
             }),
             {
               headers: {
